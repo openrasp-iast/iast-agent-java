@@ -1,0 +1,214 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on: push
+
+jobs:
+  build-linux32:
+    runs-on: ubuntu-16.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
+
+    - name: setup
+      run: |
+        sudo apt install -yq g++-multilib
+        vendors/fetch_centos6_sysroot.sh
+        prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash scripts/linux32.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_linux32
+        path: java/src/main/resources/natives
+
+  build-linux64:
+    runs-on: ubuntu-16.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
+
+    - name: setup
+      run: |
+        vendors/fetch_centos6_sysroot.sh
+        prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash scripts/linux64.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_linux64
+        path: java/src/main/resources/natives
+
+  build-linuxmusl64:
+    runs-on: ubuntu-16.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: build
+      run: bash scripts/linuxmusl64.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_linuxmusl64
+        path: java/src/main/resources/natives
+
+  build-osx64:
+    runs-on: macos-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
+
+    - name: setup
+      run: |
+        bash ./prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash scripts/osx64.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_osx64
+        path: java/src/main/resources/natives
+
+  build-windows32:
+    runs-on: windows-2016
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    # - name: cache windows prebuilts
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
+
+    - name: setup
+      run: |
+        bash ./prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash scripts/windows32.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_windows32
+        path: java/src/main/resources/natives
+
+  build-windows64:
+    runs-on: windows-2016
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    # - name: cache windows prebuilts
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
+
+    - name: setup
+      run: |
+        bash ./prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash scripts/windows64.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_windows64
+        path: java/src/main/resources/natives
+
+  upload:
+    needs: [build-linux32, build-linux64, build-linuxmusl64, build-osx64, build-windows32, build-windows64]
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-16.04
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: checkout
+      uses: actions/checkout@v2
+    
+    - name: download linux32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux32
+        path: java/src/main/resources/natives
+
+    - name: download linux64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux64
+        path: java/src/main/resources/natives
+
+    - name: download linuxmusl64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linuxmusl64
+        path: java/src/main/resources/natives
+
+    - name: download osx64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_osx64
+        path: java/src/main/resources/natives
+
+    - name: download windows32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows32
+        path: java/src/main/resources/natives
+
+    - name: download windows64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows64
+        path: java/src/main/resources/natives
+
+    - name: compress
+      run: tar zcf java_natives.tar.gz -C java/src/main/resources ./natives
+
+    - name: setup github-release
+      run: go get github.com/aktau/github-release
+
+    - name: upload snapshot
+      run: |
+        $(go env GOPATH)/bin/github-release edit -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -d "https://github.com/baidu-security/openrasp-v8/tree/$GITHUB_SHA $(date)" -p
+        $(go env GOPATH)/bin/github-release upload -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -n java_natives.tar.gz -f java_natives.tar.gz -R
+
+    - name: upload release
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: $(go env GOPATH)/bin/github-release upload -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t ${GITHUB_REF/refs\/tags\//} -n java_natives.tar.gz -f java_natives.tar.gz

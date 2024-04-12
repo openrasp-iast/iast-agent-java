@@ -1,0 +1,50 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build
+[Bb]uild*/ 
+[Dd]ebug*/
+[Rr]elease*/
+vscodebuild
+
+.vscode
+.DS_Store
+*.log
+
+*.pc
+dist
+
+prebuilts/*
+!prebuilts/CMakeLists.txt
+!prebuilts/fetch_prebuilts.sh
+!prebuilts/fetch_php_staticlibs.sh
