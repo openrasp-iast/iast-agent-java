@@ -30,8 +30,8 @@ Java agent
 * 为了保证最大兼容性，我们建议使用 JDK 6 进行编译
 * root 权限编译
 * 安装压缩工具
-    * ubuntu: `sudo apt-get install zip`
-    * centos: `sudo yum install zip`
+  * ubuntu: `sudo apt-get install zip`
+  * centos: `sudo yum install zip`
 * [Java SE Development Kit 6u45](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase6-419409.html)
 * [apache-maven 3.2.3](https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.2.3/apache-maven-3.2.3-bin.zip)
 
@@ -61,6 +61,19 @@ cd ../
 ```
 
 ## 打包发布
+
+### ；自动流程
+
+```shell
+# 创建一个标签
+git tag v1.3.7
+# 推送标签到 GitHub
+git push origin v1.3.7
+# 列出所有本地标签：
+#   git tag
+# 删除指定标签
+#   git tag -d [标签名]
+```
 
 ### 材料清单
 
